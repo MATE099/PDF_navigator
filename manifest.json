@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Local PDF Sentence Navigator",
+  "version": "1.0.0",
+  "description": "Navigate sentences in a PDF locally without sending data to external services.",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "host_permissions": ["http://*/*", "https://*/*", "file:///*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "type": "module"
+    }
+  ],
+  "action": {
+    "default_title": "PDF sentence navigator",
+    "default_popup": "popup.html"
+  }
+}

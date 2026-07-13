@@ -1,0 +1,8 @@
+{
+  "name": "local-pdf-sentence-navigator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check background.js && node --check popup.js && node --check content.js && node --check modules/text-utils.js && node --check modules/sentence-overlay.js"
+  }
+}
