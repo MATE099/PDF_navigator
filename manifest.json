@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Local PDF Sentence Navigator",
-  "version": "1.0.0",
-  "description": "Navigate sentences in a PDF locally without sending data to external services.",
-  "permissions": ["activeTab", "scripting", "tabs"],
+  "version": "1.1.0",
+  "description": "Navigate PDF sentences locally in Chrome with keyboard-first sentence navigation.",
+  "permissions": ["activeTab", "tabs"],
   "host_permissions": ["http://*/*", "https://*/*", "file:///*"],
   "background": {
     "service_worker": "background.js",

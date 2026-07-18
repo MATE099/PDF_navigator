@@ -5,6 +5,7 @@ const overlay = new SentenceOverlay();
 let sentences = [];
 let currentIndex = -1;
 let isProcessing = false;
+let keyboardNavigationInitialized = false;
 
 function isPdfDocument() {
   const url = window.location.href;
@@ -24,9 +25,30 @@ async function extractPdfText() {
   return text;
 }
 
+function normalizeSentences(nextSentences) {
+  return (nextSentences || [])
+    .map(sanitizeSentence)
+    .filter(Boolean);
+}
+
+function clearPdfExperience() {
+  sentences = [];
+  currentIndex = -1;
+  overlay.destroyOverlay();
+}
+
 function setupKeyboardNavigation() {
+  if (keyboardNavigationInitialized) {
+    return;
+  }
+
   document.addEventListener('keydown', (event) => {
     if (!sentences.length) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      clearPdfExperience();
       return;
     }
 
@@ -40,6 +62,8 @@ function setupKeyboardNavigation() {
       moveToSentence(currentIndex - 1);
     }
   });
+
+  keyboardNavigationInitialized = true;
 }
 
 function moveToSentence(nextIndex) {
@@ -61,7 +85,7 @@ function moveToSentence(nextIndex) {
 
 async function initializePdfExperience() {
   if (isProcessing) {
-    return;
+    throw new Error('PDF processing is already in progress.');
   }
 
   isProcessing = true;
@@ -86,15 +110,54 @@ async function initializePdfExperience() {
 
     window.postMessage({ type: 'pdf-sentence-navigation-ready', count: sentences.length }, '*');
     chrome.runtime.sendMessage({ type: 'pdf-processing-complete', count: sentences.length });
+    return { ok: true, count: sentences.length };
   } catch (error) {
-    chrome.runtime.sendMessage({ type: 'pdf-processing-failed', message: error?.message || 'Processing failed.' });
+    const message = error?.message || 'Processing failed.';
+    chrome.runtime.sendMessage({ type: 'pdf-processing-failed', message });
+    return { ok: false, error: message };
   } finally {
     isProcessing = false;
   }
 }
 
-chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type === 'process-pdf') {
-    initializePdfExperience();
+async function renderProvidedSentences(providedSentences) {
+  if (isProcessing) {
+    throw new Error('PDF processing is already in progress.');
   }
+
+  isProcessing = true;
+
+  try {
+    const nextSentences = normalizeSentences(providedSentences);
+    if (!nextSentences.length) {
+      throw new Error('No sentences were found in the loaded PDF.');
+    }
+
+    sentences = nextSentences;
+    overlay.createOverlay();
+    overlay.renderSentences(sentences);
+    setupKeyboardNavigation();
+    moveToSentence(0);
+
+    window.postMessage({ type: 'pdf-sentence-navigation-ready', count: sentences.length }, '*');
+    return { ok: true, count: sentences.length };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Processing failed.' };
+  } finally {
+    isProcessing = false;
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === 'process-pdf') {
+    initializePdfExperience().then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === 'render-pdf-sentences') {
+    renderProvidedSentences(message.sentences).then(sendResponse);
+    return true;
+  }
+
+  return false;
 });
