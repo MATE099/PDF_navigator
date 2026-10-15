@@ -1,4 +1,4 @@
-import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
+import { getAutoPlayDelay, splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
 import { SentenceOverlay } from './modules/sentence-overlay.js';
 import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
 import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigation.js';
@@ -15,6 +15,8 @@ let bookmarks = [];
 let isProcessing = false;
 let keyboardNavigationInitialized = false;
 let positionSaveTimer = null;
+let playbackMode = null;
+let autoPlayTimer = null;
 
 function isPdfDocument() {
   const url = window.location.href;
@@ -41,6 +43,7 @@ function normalizeSentences(nextSentences) {
 }
 
 function clearPdfExperience() {
+  stopPlayback();
   clearTimeout(positionSaveTimer);
   if (currentIndex >= 0) {
     saveDocumentState(window.location.href, { position: currentIndex });
@@ -69,7 +72,8 @@ function setupKeyboardNavigation() {
     bookmark: () => toggleCurrentBookmark(),
     nextBookmark: () => jumpToBookmark(1),
     previousBookmark: () => jumpToBookmark(-1),
-    copy: () => copyCurrentSentence()
+    copy: () => copyCurrentSentence(),
+    toggleAutoPlay: () => togglePlayback('auto')
   };
 
   document.addEventListener('keydown', (event) => {
@@ -97,6 +101,47 @@ function schedulePositionSave() {
   }, POSITION_SAVE_DELAY_MS);
 }
 
+// Playback mode: null (off) or 'auto' (advance on a timer).
+function togglePlayback(mode) {
+  if (playbackMode === mode) {
+    stopPlayback();
+    overlay.showToast('Auto-play paused');
+    return;
+  }
+
+  stopPlayback();
+  playbackMode = mode;
+  overlay.setPlaybackLabel('▶ Auto-play');
+  overlay.showToast('Auto-play on · Space to pause');
+  continuePlayback();
+}
+
+function stopPlayback() {
+  clearTimeout(autoPlayTimer);
+  playbackMode = null;
+  overlay.setPlaybackLabel('');
+}
+
+// Called after every move so playback continues from wherever the user navigated to.
+function continuePlayback() {
+  if (playbackMode !== 'auto') {
+    return;
+  }
+
+  clearTimeout(autoPlayTimer);
+  autoPlayTimer = setTimeout(advancePlayback, getAutoPlayDelay(sentences[currentIndex]));
+}
+
+function advancePlayback() {
+  if (currentIndex >= sentences.length - 1) {
+    stopPlayback();
+    overlay.showToast('Reached the last sentence');
+    return;
+  }
+
+  moveToSentence(currentIndex + 1);
+}
+
 function moveToSentence(nextIndex) {
   if (!sentences.length) {
     return;
@@ -105,6 +150,7 @@ function moveToSentence(nextIndex) {
   currentIndex = clampIndex(nextIndex, sentences.length);
   overlay.setActiveIndex(currentIndex);
   schedulePositionSave();
+  continuePlayback();
 }
 
 function toggleCurrentBookmark() {

@@ -128,6 +128,16 @@ export class SentenceOverlay {
     }
   }
 
+  // Shows a badge such as "▶ Auto-play" in the title row; an empty label hides it.
+  setPlaybackLabel(label) {
+    if (!this.playbackBadge) {
+      return;
+    }
+
+    this.playbackBadge.textContent = label;
+    this.playbackBadge.classList.toggle('is-visible', Boolean(label));
+  }
+
   // Marks bookmarked sentence cards with a star.
   setBookmarks(bookmarks) {
     this.bookmarks = new Set(bookmarks);
@@ -197,7 +207,9 @@ export class SentenceOverlay {
 
     const container = createElement('aside');
     const header = createElement('div', 'pdfnav-header');
+    const titleRow = createElement('div', 'pdfnav-title-row');
     const title = createElement('div', 'pdfnav-title', 'PDF Sentence Navigator');
+    const playbackBadge = createElement('div', 'pdfnav-playback');
     const counterRow = createElement('div', 'pdfnav-counter-row');
     const counter = createElement('div', 'pdfnav-counter');
     const progress = createElement('div', 'pdfnav-progress');
@@ -226,10 +238,12 @@ export class SentenceOverlay {
     });
 
     counterRow.append(counter, this.createGotoInput());
-    header.append(title, counterRow, progress, hint, this.createSearchBar());
+    titleRow.append(title, playbackBadge);
+    header.append(titleRow, counterRow, progress, hint, this.createSearchBar());
     container.append(header, list, toast);
     document.body.appendChild(container);
 
+    this.playbackBadge = playbackBadge;
     this.progressTrack = progressTrack;
     this.progressFill = progressFill;
     this.progressLabel = progressLabel;
@@ -324,6 +338,7 @@ export class SentenceOverlay {
     clearTimeout(this.searchTimer);
     clearTimeout(this.toastTimer);
     this.toast = null;
+    this.playbackBadge = null;
     this.bookmarks = new Set();
     this.remainingWords = [0];
     this.progressTrack = null;

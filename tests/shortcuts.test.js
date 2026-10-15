@@ -35,6 +35,10 @@ test('maps C to copy, but not Ctrl+C', () => {
   assert.equal(resolveShortcut({ key: 'c', ctrlKey: true }), null);
 });
 
+test('maps Space to auto-play', () => {
+  assert.equal(resolveShortcut({ key: ' ' }), 'toggleAutoPlay');
+});
+
 test('ignores keys combined with Ctrl, Alt or Meta', () => {
   assert.equal(resolveShortcut({ key: 'j', ctrlKey: true }), null);
   assert.equal(resolveShortcut({ key: 'Tab', altKey: true }), null);

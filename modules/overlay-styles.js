@@ -51,6 +51,30 @@ export const OVERLAY_CSS = `
   letter-spacing: 0.01em;
 }
 
+#pdf-sentence-overlay .pdfnav-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#pdf-sentence-overlay .pdfnav-playback {
+  display: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+  font: 600 11px/1.4 system-ui, sans-serif;
+  animation: pdfnav-pulse 1.6s ease-in-out infinite;
+}
+
+#pdf-sentence-overlay .pdfnav-playback.is-visible {
+  display: inline-block;
+}
+
+@keyframes pdfnav-pulse {
+  50% { opacity: 0.55; }
+}
+
 #pdf-sentence-overlay .pdfnav-counter {
   font: 600 13px/1.2 system-ui, sans-serif;
   color: var(--pdfnav-accent);

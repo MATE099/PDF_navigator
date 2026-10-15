@@ -1,7 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildRemainingWordCounts, countWords, estimateMinutes, formatDuration } from '../modules/text-utils.js';
+import {
+  MIN_AUTO_PLAY_DELAY_MS,
+  buildRemainingWordCounts,
+  countWords,
+  estimateMinutes,
+  formatDuration,
+  getAutoPlayDelay
+} from '../modules/text-utils.js';
+
+test('getAutoPlayDelay scales with sentence length', () => {
+  const twentyWords = Array.from({ length: 20 }, () => 'word').join(' ');
+  assert.equal(getAutoPlayDelay(twentyWords, 200), 6000);
+});
+
+test('getAutoPlayDelay never goes below the minimum delay', () => {
+  assert.equal(getAutoPlayDelay('Hi.', 200), MIN_AUTO_PLAY_DELAY_MS);
+  assert.equal(getAutoPlayDelay('', 200), MIN_AUTO_PLAY_DELAY_MS);
+});
 
 test('countWords counts whitespace-separated words', () => {
   assert.equal(countWords('One two  three\nfour'), 4);
