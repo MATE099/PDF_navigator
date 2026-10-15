@@ -101,6 +101,14 @@ export function estimateMinutes(wordCount, wordsPerMinute = DEFAULT_WORDS_PER_MI
   return wordCount / wordsPerMinute;
 }
 
+export const MIN_AUTO_PLAY_DELAY_MS = 1500;
+
+// How long auto-play stays on a sentence: its reading time, but never shorter than the minimum.
+export function getAutoPlayDelay(sentence, wordsPerMinute = DEFAULT_WORDS_PER_MINUTE) {
+  const readingMs = estimateMinutes(countWords(sentence), wordsPerMinute) * 60_000;
+  return Math.max(MIN_AUTO_PLAY_DELAY_MS, Math.round(readingMs));
+}
+
 export function formatDuration(minutes) {
   if (minutes <= 0) {
     return '0 min';
