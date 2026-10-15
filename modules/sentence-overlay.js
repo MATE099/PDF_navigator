@@ -2,6 +2,7 @@ import { OVERLAY_CSS, OVERLAY_STYLE_ID } from './overlay-styles.js';
 import { SHORTCUT_HINT } from './shortcuts.js';
 import { findMatches, getNextMatch, splitByQuery } from './search.js';
 import { parseSentenceNumber } from './navigation.js';
+import { DEFAULT_WORDS_PER_MINUTE, buildRemainingWordCounts, estimateMinutes, formatDuration } from './text-utils.js';
 
 // Small helper so building DOM nodes stays readable.
 function createElement(tagName, className, textContent) {
@@ -44,6 +45,11 @@ export class SentenceOverlay {
     this.toast = null;
     this.toastTimer = null;
     this.bookmarks = new Set();
+    this.remainingWords = [0];
+    this.wordsPerMinute = DEFAULT_WORDS_PER_MINUTE;
+    this.progressTrack = null;
+    this.progressFill = null;
+    this.progressLabel = null;
   }
 
   createSearchBar() {
@@ -194,12 +200,22 @@ export class SentenceOverlay {
     const title = createElement('div', 'pdfnav-title', 'PDF Sentence Navigator');
     const counterRow = createElement('div', 'pdfnav-counter-row');
     const counter = createElement('div', 'pdfnav-counter');
+    const progress = createElement('div', 'pdfnav-progress');
+    const progressTrack = createElement('div', 'pdfnav-progress-track');
+    const progressFill = createElement('div', 'pdfnav-progress-fill');
+    const progressLabel = createElement('div', 'pdfnav-progress-label');
     const hint = createElement('div', 'pdfnav-hint', SHORTCUT_HINT);
     const list = createElement('div', 'pdfnav-list');
     const toast = createElement('div', 'pdfnav-toast');
 
     container.id = 'pdf-sentence-overlay';
     toast.setAttribute('role', 'status');
+    progressTrack.setAttribute('role', 'progressbar');
+    progressTrack.setAttribute('aria-label', 'Reading progress');
+    progressTrack.setAttribute('aria-valuemin', '0');
+    progressTrack.setAttribute('aria-valuemax', '100');
+    progressTrack.append(progressFill);
+    progress.append(progressTrack, progressLabel);
 
     // One listener on the list handles clicks for every sentence card.
     list.addEventListener('click', (event) => {
@@ -210,10 +226,13 @@ export class SentenceOverlay {
     });
 
     counterRow.append(counter, this.createGotoInput());
-    header.append(title, counterRow, hint, this.createSearchBar());
+    header.append(title, counterRow, progress, hint, this.createSearchBar());
     container.append(header, list, toast);
     document.body.appendChild(container);
 
+    this.progressTrack = progressTrack;
+    this.progressFill = progressFill;
+    this.progressLabel = progressLabel;
     this.toast = toast;
     this.container = container;
     this.counter = counter;
@@ -224,6 +243,7 @@ export class SentenceOverlay {
   renderSentences(sentences) {
     this.sentences = sentences;
     this.activeIndex = -1;
+    this.remainingWords = buildRemainingWordCounts(sentences);
     if (!this.container) {
       this.createOverlay();
     }
@@ -254,10 +274,27 @@ export class SentenceOverlay {
 
     if (!this.sentences.length || this.activeIndex < 0) {
       this.counter.textContent = `${this.sentences.length} sentence${this.sentences.length === 1 ? '' : 's'} loaded`;
+      this.updateProgress();
       return;
     }
 
     this.counter.textContent = `Sentence ${this.activeIndex + 1} of ${this.sentences.length}`;
+    this.updateProgress();
+  }
+
+  updateProgress() {
+    if (!this.progressFill || !this.progressLabel) {
+      return;
+    }
+
+    const total = this.sentences.length;
+    const percent = total && this.activeIndex >= 0 ? Math.round(((this.activeIndex + 1) / total) * 100) : 0;
+    const wordsLeft = this.remainingWords[Math.max(this.activeIndex, 0)] || 0;
+    const timeLeft = formatDuration(estimateMinutes(wordsLeft, this.wordsPerMinute));
+
+    this.progressFill.style.width = `${percent}%`;
+    this.progressTrack.setAttribute('aria-valuenow', String(percent));
+    this.progressLabel.textContent = `${percent}% read · ~${timeLeft} left`;
   }
 
   setActiveIndex(index) {
@@ -288,6 +325,10 @@ export class SentenceOverlay {
     clearTimeout(this.toastTimer);
     this.toast = null;
     this.bookmarks = new Set();
+    this.remainingWords = [0];
+    this.progressTrack = null;
+    this.progressFill = null;
+    this.progressLabel = null;
     this.gotoInput = null;
     this.searchInput = null;
     this.searchStatus = null;

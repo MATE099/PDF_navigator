@@ -77,6 +77,47 @@ export function splitIntoSentences(text) {
     .filter(Boolean);
 }
 
+export const DEFAULT_WORDS_PER_MINUTE = 200;
+
+export function countWords(text) {
+  const matches = String(text ?? '').trim().match(/\S+/g);
+  return matches ? matches.length : 0;
+}
+
+// For each index, the number of words from that sentence to the end of the list.
+// Computed once so "time left" stays cheap while navigating.
+export function buildRemainingWordCounts(sentences) {
+  const remaining = new Array((sentences || []).length + 1).fill(0);
+  for (let index = remaining.length - 2; index >= 0; index -= 1) {
+    remaining[index] = remaining[index + 1] + countWords(sentences[index]);
+  }
+  return remaining;
+}
+
+export function estimateMinutes(wordCount, wordsPerMinute = DEFAULT_WORDS_PER_MINUTE) {
+  if (!wordCount || wordsPerMinute <= 0) {
+    return 0;
+  }
+  return wordCount / wordsPerMinute;
+}
+
+export function formatDuration(minutes) {
+  if (minutes <= 0) {
+    return '0 min';
+  }
+  if (minutes < 1) {
+    return '<1 min';
+  }
+
+  const rounded = Math.round(minutes);
+  const hours = Math.floor(rounded / 60);
+  const rest = rounded % 60;
+  if (!hours) {
+    return `${rest} min`;
+  }
+  return rest ? `${hours} h ${rest} min` : `${hours} h`;
+}
+
 export function sanitizeSentence(text) {
   return (text || '')
     .replace(/\s+/g, ' ')

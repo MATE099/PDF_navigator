@@ -82,6 +82,32 @@ export const OVERLAY_CSS = `
   border-color: #f87171;
 }
 
+#pdf-sentence-overlay .pdfnav-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#pdf-sentence-overlay .pdfnav-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+#pdf-sentence-overlay .pdfnav-progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3b82f6, #facc15);
+  transition: width 200ms ease;
+}
+
+#pdf-sentence-overlay .pdfnav-progress-label {
+  font: 11px/1.3 system-ui, sans-serif;
+  color: var(--pdfnav-muted);
+}
+
 #pdf-sentence-overlay .pdfnav-hint {
   font: 12px/1.35 system-ui, sans-serif;
   color: var(--pdfnav-muted);
