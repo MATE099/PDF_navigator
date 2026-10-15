@@ -49,6 +49,8 @@ export class SentenceOverlay {
     this.toastTimer = null;
     this.bookmarks = new Set();
     this.remainingWords = [0];
+    this.pages = [];
+    this.totalPages = 0;
     this.wordsPerMinute = DEFAULT_WORDS_PER_MINUTE;
     this.progressTrack = null;
     this.progressFill = null;
@@ -368,8 +370,11 @@ export class SentenceOverlay {
     return container;
   }
 
-  renderSentences(sentences) {
+  // pages[i] is the page number of sentences[i], or null when unknown.
+  renderSentences(sentences, pages = []) {
     this.sentences = sentences;
+    this.pages = pages;
+    this.totalPages = pages.reduce((max, page) => Math.max(max, page || 0), 0);
     this.activeIndex = -1;
     this.remainingWords = buildRemainingWordCounts(sentences);
     if (!this.container) {
@@ -381,7 +386,9 @@ export class SentenceOverlay {
 
     sentences.forEach((sentence, index) => {
       const marker = createElement('div', 'pdfnav-sentence');
-      const sentenceNumber = createElement('div', 'pdfnav-sentence-label', `Sentence ${index + 1}`);
+      const page = pages[index];
+      const label = page ? `Page ${page} · Sentence ${index + 1}` : `Sentence ${index + 1}`;
+      const sentenceNumber = createElement('div', 'pdfnav-sentence-label', label);
       const sentenceText = createElement('div', 'pdfnav-sentence-text', sentence);
 
       marker.dataset.index = String(index);
@@ -406,7 +413,9 @@ export class SentenceOverlay {
       return;
     }
 
-    this.counter.textContent = `Sentence ${this.activeIndex + 1} of ${this.sentences.length}`;
+    const page = this.pages[this.activeIndex];
+    const pageText = page && this.totalPages ? ` · Page ${page} of ${this.totalPages}` : '';
+    this.counter.textContent = `Sentence ${this.activeIndex + 1} of ${this.sentences.length}${pageText}`;
     this.updateProgress();
   }
 
@@ -446,6 +455,8 @@ export class SentenceOverlay {
 
   destroyOverlay() {
     this.sentences = [];
+    this.pages = [];
+    this.totalPages = 0;
     this.activeIndex = -1;
     this.counter = null;
     this.list = null;
