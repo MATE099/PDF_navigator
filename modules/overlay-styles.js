@@ -134,6 +134,28 @@ export const OVERLAY_CSS = `
   padding-right: 4px;
 }
 
+#pdf-sentence-overlay .pdfnav-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  color: var(--pdfnav-text);
+  font: 600 12px/1.3 system-ui, sans-serif;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+#pdf-sentence-overlay .pdfnav-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 #pdf-sentence-overlay .pdfnav-sentence {
   padding: 10px 12px;
   border-radius: 12px;

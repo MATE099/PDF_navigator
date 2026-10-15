@@ -41,6 +41,8 @@ export class SentenceOverlay {
     this.searchQuery = '';
     this.matches = [];
     this.searchTimer = null;
+    this.toast = null;
+    this.toastTimer = null;
   }
 
   createSearchBar() {
@@ -119,6 +121,18 @@ export class SentenceOverlay {
     }
   }
 
+  // Shows a short message at the bottom of the panel, e.g. "Copied!".
+  showToast(message, durationMs = 2200) {
+    if (!this.toast) {
+      return;
+    }
+
+    clearTimeout(this.toastTimer);
+    this.toast.textContent = message;
+    this.toast.classList.add('is-visible');
+    this.toastTimer = setTimeout(() => this.toast?.classList.remove('is-visible'), durationMs);
+  }
+
   focusSearch() {
     this.searchInput?.focus();
     this.searchInput?.select();
@@ -173,8 +187,10 @@ export class SentenceOverlay {
     const counter = createElement('div', 'pdfnav-counter');
     const hint = createElement('div', 'pdfnav-hint', SHORTCUT_HINT);
     const list = createElement('div', 'pdfnav-list');
+    const toast = createElement('div', 'pdfnav-toast');
 
     container.id = 'pdf-sentence-overlay';
+    toast.setAttribute('role', 'status');
 
     // One listener on the list handles clicks for every sentence card.
     list.addEventListener('click', (event) => {
@@ -186,9 +202,10 @@ export class SentenceOverlay {
 
     counterRow.append(counter, this.createGotoInput());
     header.append(title, counterRow, hint, this.createSearchBar());
-    container.append(header, list);
+    container.append(header, list, toast);
     document.body.appendChild(container);
 
+    this.toast = toast;
     this.container = container;
     this.counter = counter;
     this.list = list;
@@ -258,6 +275,8 @@ export class SentenceOverlay {
     this.counter = null;
     this.list = null;
     clearTimeout(this.searchTimer);
+    clearTimeout(this.toastTimer);
+    this.toast = null;
     this.gotoInput = null;
     this.searchInput = null;
     this.searchStatus = null;

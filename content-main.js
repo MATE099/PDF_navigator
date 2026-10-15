@@ -2,12 +2,16 @@ import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
 import { SentenceOverlay } from './modules/sentence-overlay.js';
 import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
 import { clampIndex } from './modules/navigation.js';
+import { loadDocumentState, saveDocumentState } from './modules/storage.js';
+
+const POSITION_SAVE_DELAY_MS = 400;
 
 const overlay = new SentenceOverlay({ onSelect: (index) => moveToSentence(index) });
 let sentences = [];
 let currentIndex = -1;
 let isProcessing = false;
 let keyboardNavigationInitialized = false;
+let positionSaveTimer = null;
 
 function isPdfDocument() {
   const url = window.location.href;
@@ -34,6 +38,11 @@ function normalizeSentences(nextSentences) {
 }
 
 function clearPdfExperience() {
+  clearTimeout(positionSaveTimer);
+  if (currentIndex >= 0) {
+    saveDocumentState(window.location.href, { position: currentIndex });
+  }
+
   sentences = [];
   currentIndex = -1;
   overlay.destroyOverlay();
@@ -72,6 +81,14 @@ function setupKeyboardNavigation() {
   keyboardNavigationInitialized = true;
 }
 
+// Waits until the user pauses before writing, so holding Tab doesn't hammer storage.
+function schedulePositionSave() {
+  clearTimeout(positionSaveTimer);
+  positionSaveTimer = setTimeout(() => {
+    saveDocumentState(window.location.href, { position: currentIndex });
+  }, POSITION_SAVE_DELAY_MS);
+}
+
 function moveToSentence(nextIndex) {
   if (!sentences.length) {
     return;
@@ -79,20 +96,34 @@ function moveToSentence(nextIndex) {
 
   currentIndex = clampIndex(nextIndex, sentences.length);
   overlay.setActiveIndex(currentIndex);
+  schedulePositionSave();
+}
+
+// Shared by both extraction paths: renders the panel and restores the saved position.
+async function showSentences(nextSentences) {
+  sentences = nextSentences;
+  overlay.createOverlay();
+  overlay.renderSentences(sentences);
+  setupKeyboardNavigation();
+
+  const savedState = await loadDocumentState(window.location.href);
+  const startIndex = clampIndex(savedState.position, sentences.length);
+  moveToSentence(startIndex);
+  if (startIndex > 0) {
+    overlay.showToast(`Resumed at sentence ${startIndex + 1}`);
+  }
+
+  window.postMessage({ type: 'pdf-sentence-navigation-ready', count: sentences.length }, '*');
 }
 
 async function initializePdfExperience() {
   if (isProcessing) {
-    throw new Error('PDF processing is already in progress.');
+    return { ok: false, error: 'PDF processing is already in progress.' };
   }
 
   isProcessing = true;
 
   try {
-    if (!isPdfDocument()) {
-      throw new Error('This page is not a PDF document.');
-    }
-
     const rawText = await extractPdfText();
     const extractedSentences = normalizeSentences(splitIntoSentences(rawText));
 
@@ -100,13 +131,7 @@ async function initializePdfExperience() {
       throw new Error('No sentences were found in the loaded PDF.');
     }
 
-    sentences = extractedSentences;
-    overlay.createOverlay();
-    overlay.renderSentences(sentences);
-    setupKeyboardNavigation();
-    moveToSentence(0);
-
-    window.postMessage({ type: 'pdf-sentence-navigation-ready', count: sentences.length }, '*');
+    await showSentences(extractedSentences);
     chrome.runtime.sendMessage({ type: 'pdf-processing-complete', count: sentences.length });
     return { ok: true, count: sentences.length };
   } catch (error) {
@@ -120,7 +145,7 @@ async function initializePdfExperience() {
 
 async function renderProvidedSentences(providedSentences) {
   if (isProcessing) {
-    throw new Error('PDF processing is already in progress.');
+    return { ok: false, error: 'PDF processing is already in progress.' };
   }
 
   isProcessing = true;
@@ -131,13 +156,7 @@ async function renderProvidedSentences(providedSentences) {
       throw new Error('No sentences were found in the loaded PDF.');
     }
 
-    sentences = nextSentences;
-    overlay.createOverlay();
-    overlay.renderSentences(sentences);
-    setupKeyboardNavigation();
-    moveToSentence(0);
-
-    window.postMessage({ type: 'pdf-sentence-navigation-ready', count: sentences.length }, '*');
+    await showSentences(nextSentences);
     return { ok: true, count: sentences.length };
   } catch (error) {
     return { ok: false, error: error?.message || 'Processing failed.' };
