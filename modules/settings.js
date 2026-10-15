@@ -6,7 +6,18 @@ const THEMES = ['dark', 'light'];
 
 export const FONT_SIZE_MIN = 11;
 export const FONT_SIZE_MAX = 24;
-export const DEFAULT_SETTINGS = Object.freeze({ theme: 'dark', fontSize: 14 });
+export const DEFAULT_SETTINGS = Object.freeze({
+  theme: 'dark',
+  fontSize: 14,
+  minimized: false,
+  showHelp: true,
+  // null means "use the default top-right corner".
+  panelPosition: null
+});
+
+function isValidPosition(position) {
+  return Boolean(position) && Number.isFinite(position.left) && Number.isFinite(position.top);
+}
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -19,6 +30,11 @@ export function normalizeSettings(raw) {
   settings.fontSize = Number.isFinite(settings.fontSize)
     ? clamp(Math.round(settings.fontSize), FONT_SIZE_MIN, FONT_SIZE_MAX)
     : DEFAULT_SETTINGS.fontSize;
+  settings.minimized = Boolean(settings.minimized);
+  settings.showHelp = Boolean(settings.showHelp);
+  settings.panelPosition = isValidPosition(settings.panelPosition)
+    ? { left: settings.panelPosition.left, top: settings.panelPosition.top }
+    : null;
   return settings;
 }
 

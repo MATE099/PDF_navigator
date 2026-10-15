@@ -5,7 +5,14 @@ import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigat
 import { getNextMatch } from './modules/search.js';
 import { copyText } from './modules/clipboard.js';
 import { isSpeechSupported, speak, stopSpeaking } from './modules/speech.js';
-import { DEFAULT_SETTINGS, changeFontSize, loadSettings, saveSettings, toggleTheme } from './modules/settings.js';
+import {
+  DEFAULT_SETTINGS,
+  changeFontSize,
+  loadSettings,
+  normalizeSettings,
+  saveSettings,
+  toggleTheme
+} from './modules/settings.js';
 import { loadDocumentState, saveDocumentState } from './modules/storage.js';
 
 const POSITION_SAVE_DELAY_MS = 400;
@@ -27,12 +34,15 @@ const actions = {
   toggleSpeech: () => togglePlayback('speech'),
   fontUp: () => updateSettings(changeFontSize(settings, 1)),
   fontDown: () => updateSettings(changeFontSize(settings, -1)),
-  toggleTheme: () => updateSettings(toggleTheme(settings))
+  toggleTheme: () => updateSettings(toggleTheme(settings)),
+  toggleHelp: () => updateSettings({ ...settings, showHelp: !settings.showHelp }),
+  toggleMinimize: () => updateSettings({ ...settings, minimized: !settings.minimized }),
+  movePanel: (position) => updateSettings({ ...settings, panelPosition: position })
 };
 
 const overlay = new SentenceOverlay({
   onSelect: (index) => moveToSentence(index),
-  onAction: (name) => actions[name]?.()
+  onAction: (name, payload) => actions[name]?.(payload)
 });
 let sentences = [];
 let currentIndex = -1;
@@ -197,7 +207,7 @@ function toggleCurrentBookmark() {
 }
 
 function updateSettings(nextSettings) {
-  settings = nextSettings;
+  settings = normalizeSettings(nextSettings);
   overlay.applySettings(settings);
   saveSettings(settings);
 }

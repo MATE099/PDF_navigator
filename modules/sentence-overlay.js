@@ -2,6 +2,7 @@ import { OVERLAY_CSS, OVERLAY_STYLE_ID } from './overlay-styles.js';
 import { SHORTCUT_HINT } from './shortcuts.js';
 import { findMatches, getNextMatch, splitByQuery } from './search.js';
 import { parseSentenceNumber } from './navigation.js';
+import { clampPanelPosition } from './layout.js';
 import { DEFAULT_WORDS_PER_MINUTE, buildRemainingWordCounts, estimateMinutes, formatDuration } from './text-utils.js';
 
 // Small helper so building DOM nodes stays readable.
@@ -135,13 +136,16 @@ export class SentenceOverlay {
     const buttons = [
       { label: 'A−', title: 'Smaller text (-)', action: 'fontDown' },
       { label: 'A+', title: 'Larger text (+)', action: 'fontUp' },
-      { label: '◐', title: 'Toggle light/dark theme (T)', action: 'toggleTheme' }
+      { label: '◐', title: 'Toggle light/dark theme (T)', action: 'toggleTheme' },
+      { label: '?', title: 'Show or hide shortcuts (?)', action: 'toggleHelp' },
+      { label: '–', title: 'Minimize or expand the panel (M)', action: 'toggleMinimize' }
     ];
 
     buttons.forEach(({ label, title, action }) => {
       const button = createElement('button', 'pdfnav-tool', label);
       button.type = 'button';
       button.title = title;
+      button.dataset.action = action;
       button.setAttribute('aria-label', title);
       button.addEventListener('click', () => this.onAction?.(action));
       toolbar.append(button);
@@ -158,6 +162,76 @@ export class SentenceOverlay {
 
     this.container.dataset.theme = settings.theme;
     this.container.style.setProperty('--pdfnav-font-size', `${settings.fontSize}px`);
+    this.container.classList.toggle('is-minimized', settings.minimized);
+    this.container.classList.toggle('is-help-hidden', !settings.showHelp);
+
+    const minimizeButton = this.container.querySelector('[data-action="toggleMinimize"]');
+    if (minimizeButton) {
+      minimizeButton.textContent = settings.minimized ? '□' : '–';
+    }
+
+    this.applyPosition(settings.panelPosition);
+  }
+
+  // Moves the panel to a saved position (kept on screen), or back to the default corner.
+  applyPosition(position) {
+    if (!this.container) {
+      return;
+    }
+
+    const rect = this.container.getBoundingClientRect();
+    const clamped = clampPanelPosition(position, rect, { width: window.innerWidth, height: window.innerHeight });
+
+    this.container.style.left = clamped ? `${clamped.left}px` : '';
+    this.container.style.top = clamped ? `${clamped.top}px` : '';
+    this.container.style.right = clamped ? 'auto' : '';
+  }
+
+  // Lets the user drag the panel by its title row. Double-click resets it to the corner.
+  enableDragging(handle) {
+    let start = null;
+
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.target.closest('button')) {
+        return;
+      }
+
+      const rect = this.container.getBoundingClientRect();
+      start = { pointerX: event.clientX, pointerY: event.clientY, left: rect.left, top: rect.top };
+      // Capture keeps move events coming even if the pointer leaves the title row.
+      handle.setPointerCapture?.(event.pointerId);
+      this.container.classList.add('is-dragging');
+    });
+
+    handle.addEventListener('pointermove', (event) => {
+      if (!start) {
+        return;
+      }
+
+      this.applyPosition({
+        left: start.left + event.clientX - start.pointerX,
+        top: start.top + event.clientY - start.pointerY
+      });
+    });
+
+    const finishDrag = () => {
+      if (!start) {
+        return;
+      }
+
+      start = null;
+      this.container.classList.remove('is-dragging');
+      const rect = this.container.getBoundingClientRect();
+      this.onAction?.('movePanel', { left: Math.round(rect.left), top: Math.round(rect.top) });
+    };
+
+    handle.addEventListener('pointerup', finishDrag);
+    handle.addEventListener('pointercancel', finishDrag);
+    handle.addEventListener('dblclick', (event) => {
+      if (!event.target.closest('button')) {
+        this.onAction?.('movePanel', null);
+      }
+    });
   }
 
   // Shows a badge such as "▶ Auto-play" in the title row; an empty label hides it.
@@ -271,6 +345,8 @@ export class SentenceOverlay {
 
     counterRow.append(counter, this.createGotoInput());
     titleRow.append(title, playbackBadge, this.createToolbar());
+    titleRow.title = 'Drag to move · double-click to reset';
+    this.enableDragging(titleRow);
     header.append(titleRow, counterRow, progress, hint, this.createSearchBar());
     container.append(header, list, toast);
     document.body.appendChild(container);
@@ -286,6 +362,9 @@ export class SentenceOverlay {
     if (this.settings) {
       this.applySettings(this.settings);
     }
+
+    this.handleResize = () => this.applyPosition(this.settings?.panelPosition);
+    window.addEventListener('resize', this.handleResize);
     return container;
   }
 
@@ -372,6 +451,10 @@ export class SentenceOverlay {
     this.list = null;
     clearTimeout(this.searchTimer);
     clearTimeout(this.toastTimer);
+    if (this.handleResize) {
+      window.removeEventListener('resize', this.handleResize);
+      this.handleResize = null;
+    }
     this.toast = null;
     this.playbackBadge = null;
     this.bookmarks = new Set();
