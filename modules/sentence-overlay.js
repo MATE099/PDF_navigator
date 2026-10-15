@@ -1,4 +1,5 @@
 import { OVERLAY_CSS, OVERLAY_STYLE_ID } from './overlay-styles.js';
+import { SHORTCUT_HINT } from './shortcuts.js';
 
 // Small helper so building DOM nodes stays readable.
 function createElement(tagName, className, textContent) {
@@ -45,7 +46,7 @@ export class SentenceOverlay {
     const header = createElement('div', 'pdfnav-header');
     const title = createElement('div', 'pdfnav-title', 'PDF Sentence Navigator');
     const counter = createElement('div', 'pdfnav-counter');
-    const hint = createElement('div', 'pdfnav-hint', 'Tab: next, Shift+Tab: previous, Esc: dismiss');
+    const hint = createElement('div', 'pdfnav-hint', SHORTCUT_HINT);
     const list = createElement('div', 'pdfnav-list');
 
     container.id = 'pdf-sentence-overlay';

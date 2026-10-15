@@ -1,5 +1,6 @@
 import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
 import { SentenceOverlay } from './modules/sentence-overlay.js';
+import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
 
 const overlay = new SentenceOverlay({ onSelect: (index) => moveToSentence(index) });
 let sentences = [];
@@ -42,25 +43,27 @@ function setupKeyboardNavigation() {
     return;
   }
 
+  // Each action name returned by resolveShortcut maps to one function here.
+  const actions = {
+    next: () => moveToSentence(currentIndex + 1),
+    previous: () => moveToSentence(currentIndex - 1),
+    first: () => moveToSentence(0),
+    last: () => moveToSentence(sentences.length - 1),
+    close: () => clearPdfExperience()
+  };
+
   document.addEventListener('keydown', (event) => {
-    if (!sentences.length) {
+    if (!sentences.length || isTypingTarget(event.target)) {
       return;
     }
 
-    if (event.key === 'Escape') {
-      clearPdfExperience();
+    const action = resolveShortcut(event);
+    if (!action || !actions[action]) {
       return;
     }
 
-    if (event.key === 'Tab' && !event.shiftKey) {
-      event.preventDefault();
-      moveToSentence(currentIndex + 1);
-    }
-
-    if (event.key === 'Tab' && event.shiftKey) {
-      event.preventDefault();
-      moveToSentence(currentIndex - 1);
-    }
+    event.preventDefault();
+    actions[action]();
   });
 
   keyboardNavigationInitialized = true;
