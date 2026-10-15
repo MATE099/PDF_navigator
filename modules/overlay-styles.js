@@ -12,6 +12,8 @@ export const OVERLAY_CSS = `
   --pdfnav-card-border: rgba(148, 163, 184, 0.18);
   --pdfnav-active: rgba(250, 204, 21, 0.18);
   --pdfnav-active-border: rgba(250, 204, 21, 0.7);
+  --pdfnav-input-bg: rgba(15, 23, 42, 0.6);
+  --pdfnav-toast-bg: rgba(30, 41, 59, 0.95);
   --pdfnav-font-size: 14px;
 
   position: fixed;
@@ -32,6 +34,48 @@ export const OVERLAY_CSS = `
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
   backdrop-filter: blur(10px);
   font-family: system-ui, sans-serif;
+}
+
+#pdf-sentence-overlay[data-theme="light"] {
+  --pdfnav-bg: rgba(255, 255, 255, 0.97);
+  --pdfnav-text: #0f172a;
+  --pdfnav-muted: #64748b;
+  --pdfnav-accent: #2563eb;
+  --pdfnav-card: rgba(37, 99, 235, 0.06);
+  --pdfnav-card-border: rgba(15, 23, 42, 0.12);
+  --pdfnav-active: rgba(250, 204, 21, 0.28);
+  --pdfnav-active-border: rgba(202, 138, 4, 0.8);
+  --pdfnav-input-bg: #f8fafc;
+  --pdfnav-toast-bg: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+}
+
+#pdf-sentence-overlay[data-theme="light"] .pdfnav-toast {
+  color: #f8fafc;
+}
+
+#pdf-sentence-overlay .pdfnav-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+#pdf-sentence-overlay .pdfnav-tool {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--pdfnav-card-border);
+  border-radius: 8px;
+  background: var(--pdfnav-input-bg);
+  color: var(--pdfnav-text);
+  font: 600 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+#pdf-sentence-overlay .pdfnav-tool:hover,
+#pdf-sentence-overlay .pdfnav-tool:focus-visible {
+  border-color: var(--pdfnav-accent);
+  outline: none;
 }
 
 #pdf-sentence-overlay *,
@@ -93,7 +137,7 @@ export const OVERLAY_CSS = `
   border: 1px solid var(--pdfnav-card-border);
   border-radius: 8px;
   outline: none;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--pdfnav-input-bg);
   color: var(--pdfnav-text);
   font: 12px/1.3 system-ui, sans-serif;
 }
@@ -150,7 +194,7 @@ export const OVERLAY_CSS = `
   border: 1px solid var(--pdfnav-card-border);
   border-radius: 10px;
   outline: none;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--pdfnav-input-bg);
   color: var(--pdfnav-text);
   font: 13px/1.3 system-ui, sans-serif;
 }
@@ -190,7 +234,7 @@ export const OVERLAY_CSS = `
   bottom: 14px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(30, 41, 59, 0.95);
+  background: var(--pdfnav-toast-bg);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   color: var(--pdfnav-text);
   font: 600 12px/1.3 system-ui, sans-serif;
