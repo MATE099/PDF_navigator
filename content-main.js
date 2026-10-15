@@ -4,6 +4,7 @@ import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
 import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigation.js';
 import { getNextMatch } from './modules/search.js';
 import { copyText } from './modules/clipboard.js';
+import { isSpeechSupported, speak, stopSpeaking } from './modules/speech.js';
 import { loadDocumentState, saveDocumentState } from './modules/storage.js';
 
 const POSITION_SAVE_DELAY_MS = 400;
@@ -73,7 +74,8 @@ function setupKeyboardNavigation() {
     nextBookmark: () => jumpToBookmark(1),
     previousBookmark: () => jumpToBookmark(-1),
     copy: () => copyCurrentSentence(),
-    toggleAutoPlay: () => togglePlayback('auto')
+    toggleAutoPlay: () => togglePlayback('auto'),
+    toggleSpeech: () => togglePlayback('speech')
   };
 
   document.addEventListener('keydown', (event) => {
@@ -101,35 +103,56 @@ function schedulePositionSave() {
   }, POSITION_SAVE_DELAY_MS);
 }
 
-// Playback mode: null (off) or 'auto' (advance on a timer).
+// Playback modes: 'auto' advances on a timer, 'speech' reads each sentence aloud and then advances.
+const PLAYBACK_MODES = {
+  auto: { badge: '▶ Auto-play', started: 'Auto-play on · Space to pause', stopped: 'Auto-play paused' },
+  speech: { badge: '🔊 Reading aloud', started: 'Reading aloud · R to stop', stopped: 'Stopped reading' }
+};
+
 function togglePlayback(mode) {
   if (playbackMode === mode) {
     stopPlayback();
-    overlay.showToast('Auto-play paused');
+    overlay.showToast(PLAYBACK_MODES[mode].stopped);
+    return;
+  }
+
+  if (mode === 'speech' && !isSpeechSupported()) {
+    overlay.showToast('Text-to-speech is not available in this browser');
     return;
   }
 
   stopPlayback();
   playbackMode = mode;
-  overlay.setPlaybackLabel('▶ Auto-play');
-  overlay.showToast('Auto-play on · Space to pause');
+  overlay.setPlaybackLabel(PLAYBACK_MODES[mode].badge);
+  overlay.showToast(PLAYBACK_MODES[mode].started);
   continuePlayback();
 }
 
 function stopPlayback() {
   clearTimeout(autoPlayTimer);
+  if (playbackMode === 'speech') {
+    stopSpeaking();
+  }
   playbackMode = null;
   overlay.setPlaybackLabel('');
 }
 
 // Called after every move so playback continues from wherever the user navigated to.
 function continuePlayback() {
-  if (playbackMode !== 'auto') {
-    return;
+  if (playbackMode === 'auto') {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = setTimeout(advancePlayback, getAutoPlayDelay(sentences[currentIndex]));
   }
 
-  clearTimeout(autoPlayTimer);
-  autoPlayTimer = setTimeout(advancePlayback, getAutoPlayDelay(sentences[currentIndex]));
+  if (playbackMode === 'speech') {
+    speak(sentences[currentIndex], {
+      onEnd: advancePlayback,
+      onError: (error) => {
+        stopPlayback();
+        overlay.showToast(`Speech stopped: ${error.message}`);
+      }
+    });
+  }
 }
 
 function advancePlayback() {
