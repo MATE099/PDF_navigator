@@ -40,6 +40,13 @@ test('maps Space to auto-play and R to read aloud', () => {
   assert.equal(resolveShortcut({ key: 'r' }), 'toggleSpeech');
 });
 
+test('maps text size and theme keys', () => {
+  assert.equal(resolveShortcut({ key: '+', shiftKey: true }), 'fontUp');
+  assert.equal(resolveShortcut({ key: '=' }), 'fontUp');
+  assert.equal(resolveShortcut({ key: '-' }), 'fontDown');
+  assert.equal(resolveShortcut({ key: 't' }), 'toggleTheme');
+});
+
 test('ignores keys combined with Ctrl, Alt or Meta', () => {
   assert.equal(resolveShortcut({ key: 'j', ctrlKey: true }), null);
   assert.equal(resolveShortcut({ key: 'Tab', altKey: true }), null);

@@ -29,8 +29,10 @@ function injectStyles() {
 
 export class SentenceOverlay {
   // onSelect(index) is called when the user clicks a sentence card.
-  constructor({ onSelect } = {}) {
+  // onAction(name) is called by toolbar buttons with the same action names the keyboard shortcuts use.
+  constructor({ onSelect, onAction } = {}) {
     this.onSelect = onSelect;
+    this.onAction = onAction;
     this.sentences = [];
     this.activeIndex = -1;
     this.container = null;
@@ -126,6 +128,36 @@ export class SentenceOverlay {
       this.gotoInput.max = String(this.sentences.length);
       this.gotoInput.focus();
     }
+  }
+
+  createToolbar() {
+    const toolbar = createElement('div', 'pdfnav-toolbar');
+    const buttons = [
+      { label: 'A−', title: 'Smaller text (-)', action: 'fontDown' },
+      { label: 'A+', title: 'Larger text (+)', action: 'fontUp' },
+      { label: '◐', title: 'Toggle light/dark theme (T)', action: 'toggleTheme' }
+    ];
+
+    buttons.forEach(({ label, title, action }) => {
+      const button = createElement('button', 'pdfnav-tool', label);
+      button.type = 'button';
+      button.title = title;
+      button.setAttribute('aria-label', title);
+      button.addEventListener('click', () => this.onAction?.(action));
+      toolbar.append(button);
+    });
+
+    return toolbar;
+  }
+
+  applySettings(settings) {
+    this.settings = settings;
+    if (!this.container) {
+      return;
+    }
+
+    this.container.dataset.theme = settings.theme;
+    this.container.style.setProperty('--pdfnav-font-size', `${settings.fontSize}px`);
   }
 
   // Shows a badge such as "▶ Auto-play" in the title row; an empty label hides it.
@@ -238,7 +270,7 @@ export class SentenceOverlay {
     });
 
     counterRow.append(counter, this.createGotoInput());
-    titleRow.append(title, playbackBadge);
+    titleRow.append(title, playbackBadge, this.createToolbar());
     header.append(titleRow, counterRow, progress, hint, this.createSearchBar());
     container.append(header, list, toast);
     document.body.appendChild(container);
@@ -251,6 +283,9 @@ export class SentenceOverlay {
     this.container = container;
     this.counter = counter;
     this.list = list;
+    if (this.settings) {
+      this.applySettings(this.settings);
+    }
     return container;
   }
 

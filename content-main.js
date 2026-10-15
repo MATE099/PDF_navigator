@@ -5,17 +5,42 @@ import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigat
 import { getNextMatch } from './modules/search.js';
 import { copyText } from './modules/clipboard.js';
 import { isSpeechSupported, speak, stopSpeaking } from './modules/speech.js';
+import { DEFAULT_SETTINGS, changeFontSize, loadSettings, saveSettings, toggleTheme } from './modules/settings.js';
 import { loadDocumentState, saveDocumentState } from './modules/storage.js';
 
 const POSITION_SAVE_DELAY_MS = 400;
 
-const overlay = new SentenceOverlay({ onSelect: (index) => moveToSentence(index) });
+// Every action name (from keyboard shortcuts or toolbar buttons) maps to one function here.
+const actions = {
+  next: () => moveToSentence(currentIndex + 1),
+  previous: () => moveToSentence(currentIndex - 1),
+  first: () => moveToSentence(0),
+  last: () => moveToSentence(sentences.length - 1),
+  close: () => clearPdfExperience(),
+  search: () => overlay.focusSearch(),
+  goto: () => overlay.focusGoto(),
+  bookmark: () => toggleCurrentBookmark(),
+  nextBookmark: () => jumpToBookmark(1),
+  previousBookmark: () => jumpToBookmark(-1),
+  copy: () => copyCurrentSentence(),
+  toggleAutoPlay: () => togglePlayback('auto'),
+  toggleSpeech: () => togglePlayback('speech'),
+  fontUp: () => updateSettings(changeFontSize(settings, 1)),
+  fontDown: () => updateSettings(changeFontSize(settings, -1)),
+  toggleTheme: () => updateSettings(toggleTheme(settings))
+};
+
+const overlay = new SentenceOverlay({
+  onSelect: (index) => moveToSentence(index),
+  onAction: (name) => actions[name]?.()
+});
 let sentences = [];
 let currentIndex = -1;
 let bookmarks = [];
 let isProcessing = false;
 let keyboardNavigationInitialized = false;
 let positionSaveTimer = null;
+let settings = DEFAULT_SETTINGS;
 let playbackMode = null;
 let autoPlayTimer = null;
 
@@ -60,23 +85,6 @@ function setupKeyboardNavigation() {
   if (keyboardNavigationInitialized) {
     return;
   }
-
-  // Each action name returned by resolveShortcut maps to one function here.
-  const actions = {
-    next: () => moveToSentence(currentIndex + 1),
-    previous: () => moveToSentence(currentIndex - 1),
-    first: () => moveToSentence(0),
-    last: () => moveToSentence(sentences.length - 1),
-    close: () => clearPdfExperience(),
-    search: () => overlay.focusSearch(),
-    goto: () => overlay.focusGoto(),
-    bookmark: () => toggleCurrentBookmark(),
-    nextBookmark: () => jumpToBookmark(1),
-    previousBookmark: () => jumpToBookmark(-1),
-    copy: () => copyCurrentSentence(),
-    toggleAutoPlay: () => togglePlayback('auto'),
-    toggleSpeech: () => togglePlayback('speech')
-  };
 
   document.addEventListener('keydown', (event) => {
     if (!sentences.length || isTypingTarget(event.target)) {
@@ -188,6 +196,12 @@ function toggleCurrentBookmark() {
   saveDocumentState(window.location.href, { bookmarks });
 }
 
+function updateSettings(nextSettings) {
+  settings = nextSettings;
+  overlay.applySettings(settings);
+  saveSettings(settings);
+}
+
 async function copyCurrentSentence() {
   const sentence = sentences[currentIndex];
   if (!sentence) {
@@ -211,9 +225,11 @@ function jumpToBookmark(direction) {
 // Shared by both extraction paths: renders the panel and restores the saved state.
 async function showSentences(nextSentences) {
   sentences = nextSentences;
-  const savedState = await loadDocumentState(window.location.href);
+  const [savedState, savedSettings] = await Promise.all([loadDocumentState(window.location.href), loadSettings()]);
   bookmarks = sanitizeBookmarks(savedState.bookmarks, sentences.length);
+  settings = savedSettings;
 
+  overlay.applySettings(settings);
   overlay.createOverlay();
   overlay.setBookmarks(bookmarks);
   overlay.renderSentences(sentences);
