@@ -35,7 +35,8 @@ Chrome's built-in PDF viewer is a sandboxed web page and does not expose the PDF
 
 - manifest.json — Manifest V3 configuration
 - background.js — Background service worker that fetches and parses the current PDF
-- content.js — Content script that renders the sentence overlay and provides a DOM-text fallback
+- content.js — Small content-script loader that dynamically imports content-main.js (content scripts cannot use static imports)
+- content-main.js — Renders the sentence overlay and provides a DOM-text fallback
 - popup.html / popup.js — Extension popup UI
 - vendor/pdfjs/ — Bundled PDF.js runtime files used by the extension
 - scripts/sync-pdfjs.mjs — Syncs vendored PDF.js files from `node_modules`

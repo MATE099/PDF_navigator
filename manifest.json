@@ -13,8 +13,13 @@
     {
       "matches": ["http://*/*", "https://*/*", "file:///*"],
       "js": ["content.js"],
-      "run_at": "document_idle",
-      "type": "module"
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content-main.js", "modules/*.js"],
+      "matches": ["http://*/*", "https://*/*", "file:///*"]
     }
   ],
   "action": {
