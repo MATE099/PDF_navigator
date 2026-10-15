@@ -49,7 +49,8 @@ function setupKeyboardNavigation() {
     previous: () => moveToSentence(currentIndex - 1),
     first: () => moveToSentence(0),
     last: () => moveToSentence(sentences.length - 1),
-    close: () => clearPdfExperience()
+    close: () => clearPdfExperience(),
+    search: () => overlay.focusSearch()
   };
 
   document.addEventListener('keydown', (event) => {

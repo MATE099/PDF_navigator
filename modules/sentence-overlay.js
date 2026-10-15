@@ -1,5 +1,6 @@
 import { OVERLAY_CSS, OVERLAY_STYLE_ID } from './overlay-styles.js';
 import { SHORTCUT_HINT } from './shortcuts.js';
+import { findMatches, getNextMatch, splitByQuery } from './search.js';
 
 // Small helper so building DOM nodes stays readable.
 function createElement(tagName, className, textContent) {
@@ -33,6 +34,88 @@ export class SentenceOverlay {
     this.container = null;
     this.counter = null;
     this.list = null;
+    this.searchInput = null;
+    this.searchStatus = null;
+    this.searchQuery = '';
+    this.matches = [];
+    this.searchTimer = null;
+  }
+
+  createSearchBar() {
+    const bar = createElement('div', 'pdfnav-search-bar');
+    const input = createElement('input', 'pdfnav-search');
+    const status = createElement('div', 'pdfnav-search-status');
+
+    input.type = 'search';
+    input.placeholder = 'Search sentences… ( / )';
+    input.setAttribute('aria-label', 'Search sentences');
+
+    // Wait for a short pause in typing so large PDFs are not re-searched on every key.
+    input.addEventListener('input', () => {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(() => this.applySearch(input.value), 120);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        clearTimeout(this.searchTimer);
+        this.applySearch(input.value);
+        this.goToMatch(event.shiftKey ? -1 : 1);
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        input.value = '';
+        this.applySearch('');
+        input.blur();
+      }
+    });
+
+    bar.append(input, status);
+    this.searchInput = input;
+    this.searchStatus = status;
+    return bar;
+  }
+
+  focusSearch() {
+    this.searchInput?.focus();
+    this.searchInput?.select();
+  }
+
+  applySearch(query) {
+    this.searchQuery = query;
+    this.matches = findMatches(this.sentences, query);
+    const matchSet = new Set(this.matches);
+
+    Array.from(this.list?.children || []).forEach((card) => {
+      const index = Number(card.dataset.index);
+      card.classList.toggle('is-match', matchSet.has(index));
+      this.renderSentenceText(card.querySelector('.pdfnav-sentence-text'), this.sentences[index], matchSet.has(index) ? query : '');
+    });
+
+    if (this.searchStatus) {
+      const count = this.matches.length;
+      this.searchStatus.textContent = query.trim() ? `${count} match${count === 1 ? '' : 'es'} · Enter / Shift+Enter` : '';
+    }
+  }
+
+  goToMatch(direction) {
+    const index = getNextMatch(this.matches, this.activeIndex, direction);
+    if (index !== -1 && this.onSelect) {
+      this.onSelect(index);
+    }
+  }
+
+  // Writes the sentence into the element, wrapping query matches in <mark> (no innerHTML, so PDF text is never parsed as HTML).
+  renderSentenceText(element, sentence, query) {
+    if (!element) {
+      return;
+    }
+
+    element.replaceChildren(...splitByQuery(sentence, query).map((part) => (
+      part.match ? createElement('mark', 'pdfnav-mark', part.text) : document.createTextNode(part.text)
+    )));
   }
 
   createOverlay() {
@@ -59,7 +142,7 @@ export class SentenceOverlay {
       }
     });
 
-    header.append(title, counter, hint);
+    header.append(title, counter, hint, this.createSearchBar());
     container.append(header, list);
     document.body.appendChild(container);
 
@@ -88,6 +171,10 @@ export class SentenceOverlay {
       marker.append(sentenceNumber, sentenceText);
       this.list?.appendChild(marker);
     });
+
+    if (this.searchQuery) {
+      this.applySearch(this.searchQuery);
+    }
   }
 
   updateCounter() {
@@ -127,6 +214,11 @@ export class SentenceOverlay {
     this.activeIndex = -1;
     this.counter = null;
     this.list = null;
+    clearTimeout(this.searchTimer);
+    this.searchInput = null;
+    this.searchStatus = null;
+    this.searchQuery = '';
+    this.matches = [];
     this.container?.remove();
     this.container = null;
   }

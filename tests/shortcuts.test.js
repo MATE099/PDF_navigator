@@ -19,6 +19,10 @@ test('maps Home, End and Escape', () => {
   assert.equal(resolveShortcut({ key: 'Escape' }), 'close');
 });
 
+test('maps / to search', () => {
+  assert.equal(resolveShortcut({ key: '/' }), 'search');
+});
+
 test('ignores keys combined with Ctrl, Alt or Meta', () => {
   assert.equal(resolveShortcut({ key: 'j', ctrlKey: true }), null);
   assert.equal(resolveShortcut({ key: 'Tab', altKey: true }), null);
