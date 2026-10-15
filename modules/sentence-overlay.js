@@ -139,6 +139,7 @@ export class SentenceOverlay {
       { label: 'A−', title: 'Smaller text (-)', action: 'fontDown' },
       { label: 'A+', title: 'Larger text (+)', action: 'fontUp' },
       { label: '◐', title: 'Toggle light/dark theme (T)', action: 'toggleTheme' },
+      { label: '⤓', title: 'Export bookmarks as Markdown (E)', action: 'exportBookmarks' },
       { label: '?', title: 'Show or hide shortcuts (?)', action: 'toggleHelp' },
       { label: '–', title: 'Minimize or expand the panel (M)', action: 'toggleMinimize' }
     ];
