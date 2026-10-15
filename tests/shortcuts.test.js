@@ -24,6 +24,12 @@ test('maps / to search and G to go-to', () => {
   assert.equal(resolveShortcut({ key: 'g' }), 'goto');
 });
 
+test('maps bookmark shortcuts', () => {
+  assert.equal(resolveShortcut({ key: 'b' }), 'bookmark');
+  assert.equal(resolveShortcut({ key: 'n', shiftKey: false }), 'nextBookmark');
+  assert.equal(resolveShortcut({ key: 'N', shiftKey: true }), 'previousBookmark');
+});
+
 test('ignores keys combined with Ctrl, Alt or Meta', () => {
   assert.equal(resolveShortcut({ key: 'j', ctrlKey: true }), null);
   assert.equal(resolveShortcut({ key: 'Tab', altKey: true }), null);

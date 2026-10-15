@@ -1,7 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { clampIndex, parseSentenceNumber } from '../modules/navigation.js';
+import { clampIndex, parseSentenceNumber, sanitizeBookmarks, toggleBookmark } from '../modules/navigation.js';
+
+test('toggleBookmark adds and removes indexes and keeps them sorted', () => {
+  assert.deepEqual(toggleBookmark([5, 1], 3), [1, 3, 5]);
+  assert.deepEqual(toggleBookmark([1, 3, 5], 3), [1, 5]);
+  assert.deepEqual(toggleBookmark(undefined, 2), [2]);
+});
+
+test('sanitizeBookmarks removes invalid, duplicate and out-of-range entries', () => {
+  assert.deepEqual(sanitizeBookmarks([4, 'x', -1, 2, 2, 10, 1.5], 5), [2, 4]);
+  assert.deepEqual(sanitizeBookmarks(null, 5), []);
+});
 
 test('clampIndex keeps indexes within the list', () => {
   assert.equal(clampIndex(-3, 10), 0);

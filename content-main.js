@@ -1,7 +1,8 @@
 import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
 import { SentenceOverlay } from './modules/sentence-overlay.js';
 import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
-import { clampIndex } from './modules/navigation.js';
+import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigation.js';
+import { getNextMatch } from './modules/search.js';
 import { loadDocumentState, saveDocumentState } from './modules/storage.js';
 
 const POSITION_SAVE_DELAY_MS = 400;
@@ -9,6 +10,7 @@ const POSITION_SAVE_DELAY_MS = 400;
 const overlay = new SentenceOverlay({ onSelect: (index) => moveToSentence(index) });
 let sentences = [];
 let currentIndex = -1;
+let bookmarks = [];
 let isProcessing = false;
 let keyboardNavigationInitialized = false;
 let positionSaveTimer = null;
@@ -45,6 +47,7 @@ function clearPdfExperience() {
 
   sentences = [];
   currentIndex = -1;
+  bookmarks = [];
   overlay.destroyOverlay();
 }
 
@@ -61,7 +64,10 @@ function setupKeyboardNavigation() {
     last: () => moveToSentence(sentences.length - 1),
     close: () => clearPdfExperience(),
     search: () => overlay.focusSearch(),
-    goto: () => overlay.focusGoto()
+    goto: () => overlay.focusGoto(),
+    bookmark: () => toggleCurrentBookmark(),
+    nextBookmark: () => jumpToBookmark(1),
+    previousBookmark: () => jumpToBookmark(-1)
   };
 
   document.addEventListener('keydown', (event) => {
@@ -99,14 +105,39 @@ function moveToSentence(nextIndex) {
   schedulePositionSave();
 }
 
-// Shared by both extraction paths: renders the panel and restores the saved position.
+function toggleCurrentBookmark() {
+  if (currentIndex < 0) {
+    return;
+  }
+
+  const wasBookmarked = bookmarks.includes(currentIndex);
+  bookmarks = toggleBookmark(bookmarks, currentIndex);
+  overlay.setBookmarks(bookmarks);
+  overlay.showToast(wasBookmarked ? 'Bookmark removed' : `Bookmarked sentence ${currentIndex + 1}`);
+  saveDocumentState(window.location.href, { bookmarks });
+}
+
+function jumpToBookmark(direction) {
+  const target = getNextMatch(bookmarks, currentIndex, direction);
+  if (target === -1) {
+    overlay.showToast('No bookmarks yet. Press B to add one.');
+    return;
+  }
+
+  moveToSentence(target);
+}
+
+// Shared by both extraction paths: renders the panel and restores the saved state.
 async function showSentences(nextSentences) {
   sentences = nextSentences;
+  const savedState = await loadDocumentState(window.location.href);
+  bookmarks = sanitizeBookmarks(savedState.bookmarks, sentences.length);
+
   overlay.createOverlay();
+  overlay.setBookmarks(bookmarks);
   overlay.renderSentences(sentences);
   setupKeyboardNavigation();
 
-  const savedState = await loadDocumentState(window.location.href);
   const startIndex = clampIndex(savedState.position, sentences.length);
   moveToSentence(startIndex);
   if (startIndex > 0) {

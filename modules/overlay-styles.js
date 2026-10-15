@@ -182,6 +182,11 @@ export const OVERLAY_CSS = `
   color: var(--pdfnav-accent);
 }
 
+#pdf-sentence-overlay .pdfnav-sentence.is-bookmarked .pdfnav-sentence-label::after {
+  content: ' ★';
+  color: #facc15;
+}
+
 #pdf-sentence-overlay .pdfnav-sentence-text {
   font: var(--pdfnav-font-size)/1.5 system-ui, sans-serif;
   color: var(--pdfnav-text);

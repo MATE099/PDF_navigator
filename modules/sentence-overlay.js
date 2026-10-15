@@ -43,6 +43,7 @@ export class SentenceOverlay {
     this.searchTimer = null;
     this.toast = null;
     this.toastTimer = null;
+    this.bookmarks = new Set();
   }
 
   createSearchBar() {
@@ -119,6 +120,14 @@ export class SentenceOverlay {
       this.gotoInput.max = String(this.sentences.length);
       this.gotoInput.focus();
     }
+  }
+
+  // Marks bookmarked sentence cards with a star.
+  setBookmarks(bookmarks) {
+    this.bookmarks = new Set(bookmarks);
+    Array.from(this.list?.children || []).forEach((card) => {
+      card.classList.toggle('is-bookmarked', this.bookmarks.has(Number(card.dataset.index)));
+    });
   }
 
   // Shows a short message at the bottom of the panel, e.g. "Copied!".
@@ -228,6 +237,7 @@ export class SentenceOverlay {
       const sentenceText = createElement('div', 'pdfnav-sentence-text', sentence);
 
       marker.dataset.index = String(index);
+      marker.classList.toggle('is-bookmarked', this.bookmarks.has(index));
       marker.append(sentenceNumber, sentenceText);
       this.list?.appendChild(marker);
     });
@@ -277,6 +287,7 @@ export class SentenceOverlay {
     clearTimeout(this.searchTimer);
     clearTimeout(this.toastTimer);
     this.toast = null;
+    this.bookmarks = new Set();
     this.gotoInput = null;
     this.searchInput = null;
     this.searchStatus = null;
