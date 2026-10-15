@@ -1,6 +1,7 @@
 import { OVERLAY_CSS, OVERLAY_STYLE_ID } from './overlay-styles.js';
 import { SHORTCUT_HINT } from './shortcuts.js';
 import { findMatches, getNextMatch, splitByQuery } from './search.js';
+import { parseSentenceNumber } from './navigation.js';
 
 // Small helper so building DOM nodes stays readable.
 function createElement(tagName, className, textContent) {
@@ -34,6 +35,7 @@ export class SentenceOverlay {
     this.container = null;
     this.counter = null;
     this.list = null;
+    this.gotoInput = null;
     this.searchInput = null;
     this.searchStatus = null;
     this.searchQuery = '';
@@ -76,6 +78,45 @@ export class SentenceOverlay {
     this.searchInput = input;
     this.searchStatus = status;
     return bar;
+  }
+
+  createGotoInput() {
+    const input = createElement('input', 'pdfnav-goto');
+    input.type = 'number';
+    input.min = '1';
+    input.placeholder = 'Go to #';
+    input.title = 'Type a sentence number and press Enter (G)';
+    input.setAttribute('aria-label', 'Go to sentence number');
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const index = parseSentenceNumber(input.value, this.sentences.length);
+        input.classList.toggle('is-invalid', index === -1);
+        if (index !== -1) {
+          this.onSelect?.(index);
+          input.value = '';
+          input.blur();
+        }
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        input.value = '';
+        input.classList.remove('is-invalid');
+        input.blur();
+      }
+    });
+
+    this.gotoInput = input;
+    return input;
+  }
+
+  focusGoto() {
+    if (this.gotoInput) {
+      this.gotoInput.max = String(this.sentences.length);
+      this.gotoInput.focus();
+    }
   }
 
   focusSearch() {
@@ -128,6 +169,7 @@ export class SentenceOverlay {
     const container = createElement('aside');
     const header = createElement('div', 'pdfnav-header');
     const title = createElement('div', 'pdfnav-title', 'PDF Sentence Navigator');
+    const counterRow = createElement('div', 'pdfnav-counter-row');
     const counter = createElement('div', 'pdfnav-counter');
     const hint = createElement('div', 'pdfnav-hint', SHORTCUT_HINT);
     const list = createElement('div', 'pdfnav-list');
@@ -142,7 +184,8 @@ export class SentenceOverlay {
       }
     });
 
-    header.append(title, counter, hint, this.createSearchBar());
+    counterRow.append(counter, this.createGotoInput());
+    header.append(title, counterRow, hint, this.createSearchBar());
     container.append(header, list);
     document.body.appendChild(container);
 
@@ -215,6 +258,7 @@ export class SentenceOverlay {
     this.counter = null;
     this.list = null;
     clearTimeout(this.searchTimer);
+    this.gotoInput = null;
     this.searchInput = null;
     this.searchStatus = null;
     this.searchQuery = '';

@@ -8,10 +8,11 @@ const SHORTCUTS = [
   { key: 'Home', action: 'first' },
   { key: 'End', action: 'last' },
   { key: 'Escape', action: 'close' },
-  { key: '/', action: 'search' }
+  { key: '/', action: 'search' },
+  { key: 'g', action: 'goto' }
 ];
 
-export const SHORTCUT_HINT = 'Tab / J: next · Shift+Tab / K: previous · Home / End · /: search · Esc: close';
+export const SHORTCUT_HINT = 'Tab / J: next · Shift+Tab / K: previous · Home / End · /: search · G: go to # · Esc: close';
 
 export function resolveShortcut(event) {
   if (!event || event.ctrlKey || event.metaKey || event.altKey) {
