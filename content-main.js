@@ -96,7 +96,7 @@ async function initializePdfExperience() {
     }
 
     const rawText = await extractPdfText();
-    const extractedSentences = splitIntoSentences(rawText).map(sanitizeSentence);
+    const extractedSentences = normalizeSentences(splitIntoSentences(rawText));
 
     if (!extractedSentences.length) {
       throw new Error('No sentences were found in the loaded PDF.');
