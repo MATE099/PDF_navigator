@@ -3,6 +3,7 @@ import { SentenceOverlay } from './modules/sentence-overlay.js';
 import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
 import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigation.js';
 import { getNextMatch } from './modules/search.js';
+import { copyText } from './modules/clipboard.js';
 import { loadDocumentState, saveDocumentState } from './modules/storage.js';
 
 const POSITION_SAVE_DELAY_MS = 400;
@@ -67,7 +68,8 @@ function setupKeyboardNavigation() {
     goto: () => overlay.focusGoto(),
     bookmark: () => toggleCurrentBookmark(),
     nextBookmark: () => jumpToBookmark(1),
-    previousBookmark: () => jumpToBookmark(-1)
+    previousBookmark: () => jumpToBookmark(-1),
+    copy: () => copyCurrentSentence()
   };
 
   document.addEventListener('keydown', (event) => {
@@ -115,6 +117,16 @@ function toggleCurrentBookmark() {
   overlay.setBookmarks(bookmarks);
   overlay.showToast(wasBookmarked ? 'Bookmark removed' : `Bookmarked sentence ${currentIndex + 1}`);
   saveDocumentState(window.location.href, { bookmarks });
+}
+
+async function copyCurrentSentence() {
+  const sentence = sentences[currentIndex];
+  if (!sentence) {
+    return;
+  }
+
+  const copied = await copyText(sentence);
+  overlay.showToast(copied ? 'Sentence copied' : 'Copy failed');
 }
 
 function jumpToBookmark(direction) {
