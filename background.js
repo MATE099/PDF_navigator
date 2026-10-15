@@ -1,5 +1,5 @@
 import { getDocument, GlobalWorkerOptions } from './vendor/pdfjs/pdf.mjs';
-import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
+import { splitPagesIntoSentences } from './modules/text-utils.js';
 
 GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('vendor/pdfjs/pdf.worker.mjs');
 
@@ -92,7 +92,8 @@ async function fetchPdfBytes(url) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function extractPdfTextFromBytes(pdfBytes) {
+// Returns one text string per page, in page order.
+async function extractPdfPagesFromBytes(pdfBytes) {
   const loadingTask = getDocument({ data: pdfBytes });
 
   try {
@@ -121,18 +122,12 @@ async function extractPdfTextFromBytes(pdfBytes) {
       pages.push(textFragments.join('').trim());
     }
 
-    return pages.join('\n');
+    return pages;
   } finally {
     if (typeof loadingTask.destroy === 'function') {
       await loadingTask.destroy();
     }
   }
-}
-
-function buildSentences(rawText) {
-  return splitIntoSentences(rawText)
-    .map(sanitizeSentence)
-    .filter(Boolean);
 }
 
 async function processPdfViaBackground(tabId) {
@@ -144,14 +139,18 @@ async function processPdfViaBackground(tabId) {
   }
 
   const pdfBytes = await fetchPdfBytes(url);
-  const rawText = await extractPdfTextFromBytes(pdfBytes);
-  const sentences = buildSentences(rawText);
+  const pageTexts = await extractPdfPagesFromBytes(pdfBytes);
+  const sentences = splitPagesIntoSentences(pageTexts);
 
   if (!sentences.length) {
     throw new Error('No sentences were found in the loaded PDF.');
   }
 
-  const renderResult = await sendMessageToTab(tabId, { type: 'render-pdf-sentences', sentences });
+  const renderResult = await sendMessageToTab(tabId, {
+    type: 'render-pdf-sentences',
+    sentences: sentences.map((sentence) => sentence.text),
+    pages: sentences.map((sentence) => sentence.page)
+  });
   if (!renderResult?.ok) {
     throw new Error(renderResult?.error || 'The PDF text was extracted, but the page could not render it.');
   }

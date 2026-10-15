@@ -45,6 +45,8 @@ const overlay = new SentenceOverlay({
   onAction: (name, payload) => actions[name]?.(payload)
 });
 let sentences = [];
+// Page number for each sentence (null when the page is unknown, e.g. the DOM-text fallback).
+let sentencePages = [];
 let currentIndex = -1;
 let bookmarks = [];
 let isProcessing = false;
@@ -72,10 +74,20 @@ async function extractPdfText() {
   return text;
 }
 
-function normalizeSentences(nextSentences) {
-  return (nextSentences || [])
-    .map(sanitizeSentence)
-    .filter(Boolean);
+// Cleans up sentences and drops empty ones, keeping the optional page numbers aligned.
+function normalizeSentences(nextSentences, nextPages = []) {
+  const texts = [];
+  const pages = [];
+
+  (nextSentences || []).forEach((sentence, index) => {
+    const text = sanitizeSentence(sentence);
+    if (text) {
+      texts.push(text);
+      pages.push(Number.isInteger(nextPages?.[index]) ? nextPages[index] : null);
+    }
+  });
+
+  return { texts, pages };
 }
 
 function clearPdfExperience() {
@@ -86,6 +98,7 @@ function clearPdfExperience() {
   }
 
   sentences = [];
+  sentencePages = [];
   currentIndex = -1;
   bookmarks = [];
   overlay.destroyOverlay();
@@ -233,8 +246,9 @@ function jumpToBookmark(direction) {
 }
 
 // Shared by both extraction paths: renders the panel and restores the saved state.
-async function showSentences(nextSentences) {
-  sentences = nextSentences;
+async function showSentences({ texts, pages }) {
+  sentences = texts;
+  sentencePages = pages;
   const [savedState, savedSettings] = await Promise.all([loadDocumentState(window.location.href), loadSettings()]);
   bookmarks = sanitizeBookmarks(savedState.bookmarks, sentences.length);
   settings = savedSettings;
@@ -242,7 +256,7 @@ async function showSentences(nextSentences) {
   overlay.applySettings(settings);
   overlay.createOverlay();
   overlay.setBookmarks(bookmarks);
-  overlay.renderSentences(sentences);
+  overlay.renderSentences(sentences, sentencePages);
   setupKeyboardNavigation();
 
   const startIndex = clampIndex(savedState.position, sentences.length);
@@ -265,7 +279,7 @@ async function initializePdfExperience() {
     const rawText = await extractPdfText();
     const extractedSentences = normalizeSentences(splitIntoSentences(rawText));
 
-    if (!extractedSentences.length) {
+    if (!extractedSentences.texts.length) {
       throw new Error('No sentences were found in the loaded PDF.');
     }
 
@@ -281,7 +295,7 @@ async function initializePdfExperience() {
   }
 }
 
-async function renderProvidedSentences(providedSentences) {
+async function renderProvidedSentences(providedSentences, providedPages) {
   if (isProcessing) {
     return { ok: false, error: 'PDF processing is already in progress.' };
   }
@@ -289,8 +303,8 @@ async function renderProvidedSentences(providedSentences) {
   isProcessing = true;
 
   try {
-    const nextSentences = normalizeSentences(providedSentences);
-    if (!nextSentences.length) {
+    const nextSentences = normalizeSentences(providedSentences, providedPages);
+    if (!nextSentences.texts.length) {
       throw new Error('No sentences were found in the loaded PDF.');
     }
 
@@ -310,7 +324,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === 'render-pdf-sentences') {
-    renderProvidedSentences(message.sentences).then(sendResponse);
+    renderProvidedSentences(message.sentences, message.pages).then(sendResponse);
     return true;
   }
 

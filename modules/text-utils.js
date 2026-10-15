@@ -77,6 +77,37 @@ export function splitIntoSentences(text) {
     .filter(Boolean);
 }
 
+const SENTENCE_END = /[.!?]["')\]]*$/;
+
+// Splits each page separately so every sentence knows its page number (1-based).
+// A sentence cut by a page break (no closing punctuation, next page starts in lowercase)
+// is joined back together and keeps the page where it started.
+export function splitPagesIntoSentences(pages) {
+  const result = [];
+
+  (pages || []).forEach((pageText, pageIndex) => {
+    const page = pageIndex + 1;
+    const pageSentences = splitIntoSentences(pageText).map(sanitizeSentence).filter(Boolean);
+
+    pageSentences.forEach((text, index) => {
+      const previous = result[result.length - 1];
+      const continuesPrevious = index === 0
+        && previous
+        && previous.page < page
+        && !SENTENCE_END.test(previous.text)
+        && /^[a-z]/.test(text);
+
+      if (continuesPrevious) {
+        previous.text = `${previous.text} ${text}`;
+      } else {
+        result.push({ text, page });
+      }
+    });
+  });
+
+  return result;
+}
+
 export const DEFAULT_WORDS_PER_MINUTE = 200;
 
 export function countWords(text) {
