@@ -74,6 +74,15 @@ async function extractPdfText() {
   return text;
 }
 
+// The popup may be closed (e.g. when started with the keyboard command), so a missing listener is fine.
+function notifyPopup(message) {
+  try {
+    Promise.resolve(chrome.runtime.sendMessage(message)).catch(() => {});
+  } catch {
+    // The extension was reloaded and this page's content script is orphaned.
+  }
+}
+
 // Cleans up sentences and drops empty ones, keeping the optional page numbers aligned.
 function normalizeSentences(nextSentences, nextPages = []) {
   const texts = [];
@@ -284,11 +293,11 @@ async function initializePdfExperience() {
     }
 
     await showSentences(extractedSentences);
-    chrome.runtime.sendMessage({ type: 'pdf-processing-complete', count: sentences.length });
+    notifyPopup({ type: 'pdf-processing-complete', count: sentences.length });
     return { ok: true, count: sentences.length };
   } catch (error) {
     const message = error?.message || 'Processing failed.';
-    chrome.runtime.sendMessage({ type: 'pdf-processing-failed', message });
+    notifyPopup({ type: 'pdf-processing-failed', message });
     return { ok: false, error: message };
   } finally {
     isProcessing = false;

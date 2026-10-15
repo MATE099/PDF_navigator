@@ -22,6 +22,12 @@
       "matches": ["http://*/*", "https://*/*", "file:///*"]
     }
   ],
+  "commands": {
+    "process-pdf": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Process the PDF in the current tab"
+    }
+  },
   "action": {
     "default_title": "PDF sentence navigator",
     "default_popup": "popup.html"

@@ -7,6 +7,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'request-process-pdf') {
     processCurrentPdf(message.tabId)
       .then((result) => {
+        if (result?.ok) {
+          setErrorBadge(message.tabId, null);
+        }
+
         if (!result?.ok) {
           sendResponse({ ok: false, error: result?.error || 'Processing failed.' });
           return;
@@ -15,7 +19,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ ok: true, count: result.count });
       })
       .catch((error) => {
-        chrome.runtime.sendMessage({ type: 'pdf-processing-failed', message: error?.message || 'Processing failed.' });
+        notifyPopup({ type: 'pdf-processing-failed', message: error?.message || 'Processing failed.' });
         sendResponse({ ok: false, error: error?.message || 'Processing failed.' });
       });
     return true;
@@ -23,6 +27,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   return false;
 });
+
+// Keyboard shortcut (Alt+Shift+P by default, configurable at chrome://extensions/shortcuts).
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== 'process-pdf') {
+    return;
+  }
+
+  let tabId = null;
+  try {
+    tabId = await getActiveTabId();
+    const result = await processCurrentPdf(tabId);
+    await setErrorBadge(tabId, result?.ok ? null : result?.error);
+  } catch (error) {
+    await setErrorBadge(tabId, error?.message || 'Processing failed.');
+  }
+});
+
+// The popup may be closed, in which case nobody is listening; that is not an error.
+function notifyPopup(message) {
+  chrome.runtime.sendMessage(message).catch(() => {});
+}
+
+// Without the popup open, a red "!" on the toolbar icon is the only way to report a failure.
+async function setErrorBadge(tabId, errorMessage) {
+  if (!tabId) {
+    return;
+  }
+
+  try {
+    await chrome.action.setBadgeBackgroundColor({ tabId, color: '#dc2626' });
+    await chrome.action.setBadgeText({ tabId, text: errorMessage ? '!' : '' });
+    await chrome.action.setTitle({ tabId, title: errorMessage ? `PDF navigator: ${errorMessage}` : 'PDF sentence navigator' });
+  } catch {
+    // The tab may have been closed in the meantime.
+  }
+}
 
 function getTab(tabId) {
   return new Promise((resolve, reject) => {
@@ -155,7 +195,7 @@ async function processPdfViaBackground(tabId) {
     throw new Error(renderResult?.error || 'The PDF text was extracted, but the page could not render it.');
   }
 
-  chrome.runtime.sendMessage({ type: 'pdf-processing-complete', count: sentences.length });
+  notifyPopup({ type: 'pdf-processing-complete', count: sentences.length });
   return { ok: true, count: sentences.length };
 }
 
