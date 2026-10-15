@@ -66,6 +66,17 @@ test('does not split on academic abbreviations', () => {
   ]);
 });
 
+test('keeps dotted acronyms and spaced initials together', () => {
+  assert.deepEqual(splitIntoSentences('The U.S. Army arrived. It was late.'), [
+    'The U.S. Army arrived.',
+    'It was late.'
+  ]);
+  assert.deepEqual(splitIntoSentences('J. R. R. Tolkien wrote books. Many.'), [
+    'J. R. R. Tolkien wrote books.',
+    'Many.'
+  ]);
+});
+
 test('returns an empty list for empty or blank input', () => {
   assert.deepEqual(splitIntoSentences(''), []);
   assert.deepEqual(splitIntoSentences('   \n\n  '), []);

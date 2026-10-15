@@ -1,4 +1,6 @@
-const PROTECTED_DOT = '__PDF_SENTENCE_DOT__';
+// Private-use character: it must not be a regex word character, otherwise `\b`
+// stops matching after it (e.g. the "S" in an already protected "U.S.").
+const PROTECTED_DOT = '\uE000';
 const SENTENCE_BREAK = '__PDF_SENTENCE_BREAK__';
 const COMMON_ABBREVIATIONS = [
   'Mr.',
@@ -51,6 +53,7 @@ function protectSpecialDots(text) {
   }
 
   protectedText = protectedText.replace(/\b([A-Z])\.(?=[A-Z]\.)/g, `$1${PROTECTED_DOT}`);
+  protectedText = protectedText.replace(/\b([A-Z])\.(?=\s+[A-Z]\.)/g, `$1${PROTECTED_DOT}`);
   protectedText = protectedText.replace(/\b([A-Z])\.(?=\s+[A-Z][a-z])/g, `$1${PROTECTED_DOT}`);
   protectedText = protectedText.replace(/(\d)\.(\d)/g, `$1${PROTECTED_DOT}$2`);
 
