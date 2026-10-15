@@ -61,6 +61,45 @@ export const OVERLAY_CSS = `
   color: var(--pdfnav-muted);
 }
 
+#pdf-sentence-overlay .pdfnav-search-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+#pdf-sentence-overlay .pdfnav-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--pdfnav-card-border);
+  border-radius: 10px;
+  outline: none;
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--pdfnav-text);
+  font: 13px/1.3 system-ui, sans-serif;
+}
+
+#pdf-sentence-overlay .pdfnav-search:focus {
+  border-color: var(--pdfnav-accent);
+}
+
+#pdf-sentence-overlay .pdfnav-search-status {
+  min-height: 14px;
+  font: 11px/1.3 system-ui, sans-serif;
+  color: var(--pdfnav-muted);
+}
+
+#pdf-sentence-overlay .pdfnav-sentence.is-match:not(.is-active) {
+  box-shadow: inset 3px 0 0 var(--pdfnav-accent), inset 0 0 0 1px var(--pdfnav-card-border);
+}
+
+#pdf-sentence-overlay .pdfnav-mark {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: rgba(250, 204, 21, 0.45);
+  color: inherit;
+}
+
 #pdf-sentence-overlay .pdfnav-list {
   display: flex;
   flex-direction: column;
