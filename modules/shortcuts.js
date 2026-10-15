@@ -14,10 +14,11 @@ const SHORTCUTS = [
   { key: 'n', shift: false, action: 'nextBookmark' },
   { key: 'n', shift: true, action: 'previousBookmark' },
   { key: 'c', action: 'copy' },
-  { key: ' ', action: 'toggleAutoPlay' }
+  { key: ' ', action: 'toggleAutoPlay' },
+  { key: 'r', action: 'toggleSpeech' }
 ];
 
-export const SHORTCUT_HINT = 'Tab/J next · Shift+Tab/K previous · Home/End · / search · G go to # · B bookmark · N/Shift+N bookmarks · C copy · Space auto-play · Esc close';
+export const SHORTCUT_HINT = 'Tab/J next · Shift+Tab/K previous · Home/End · / search · G go to # · B bookmark · N/Shift+N bookmarks · C copy · Space auto-play · R read aloud · Esc close';
 
 export function resolveShortcut(event) {
   if (!event || event.ctrlKey || event.metaKey || event.altKey) {
