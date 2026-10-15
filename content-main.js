@@ -1,7 +1,7 @@
 import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
 import { SentenceOverlay } from './modules/sentence-overlay.js';
 
-const overlay = new SentenceOverlay();
+const overlay = new SentenceOverlay({ onSelect: (index) => moveToSentence(index) });
 let sentences = [];
 let currentIndex = -1;
 let isProcessing = false;
