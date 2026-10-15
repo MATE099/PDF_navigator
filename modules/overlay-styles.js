@@ -101,6 +101,32 @@ export const OVERLAY_CSS = `
   gap: 8px;
 }
 
+#pdf-sentence-overlay .pdfnav-title-row {
+  cursor: grab;
+  touch-action: none;
+}
+
+#pdf-sentence-overlay.is-dragging {
+  user-select: none;
+  opacity: 0.92;
+}
+
+#pdf-sentence-overlay.is-dragging .pdfnav-title-row {
+  cursor: grabbing;
+}
+
+#pdf-sentence-overlay.is-help-hidden .pdfnav-hint,
+#pdf-sentence-overlay.is-minimized .pdfnav-hint,
+#pdf-sentence-overlay.is-minimized .pdfnav-search-bar,
+#pdf-sentence-overlay.is-minimized .pdfnav-list,
+#pdf-sentence-overlay.is-minimized .pdfnav-goto {
+  display: none;
+}
+
+#pdf-sentence-overlay.is-minimized {
+  width: min(300px, calc(100vw - 32px));
+}
+
 #pdf-sentence-overlay .pdfnav-playback {
   display: none;
   padding: 2px 8px;

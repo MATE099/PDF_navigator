@@ -21,6 +21,12 @@ test('normalizeSettings repairs invalid values', () => {
   assert.equal(settings.fontSize, DEFAULT_SETTINGS.fontSize);
 });
 
+test('normalizeSettings keeps valid panel positions and drops broken ones', () => {
+  assert.deepEqual(normalizeSettings({ panelPosition: { left: 10, top: 20 } }).panelPosition, { left: 10, top: 20 });
+  assert.equal(normalizeSettings({ panelPosition: { left: 'x', top: 20 } }).panelPosition, null);
+  assert.equal(normalizeSettings({ minimized: 1 }).minimized, true);
+});
+
 test('changeFontSize stays within the allowed range', () => {
   assert.equal(changeFontSize({ ...DEFAULT_SETTINGS, fontSize: 14 }, 1).fontSize, 15);
   assert.equal(changeFontSize({ ...DEFAULT_SETTINGS, fontSize: FONT_SIZE_MAX }, 1).fontSize, FONT_SIZE_MAX);

@@ -47,6 +47,11 @@ test('maps text size and theme keys', () => {
   assert.equal(resolveShortcut({ key: 't' }), 'toggleTheme');
 });
 
+test('maps M to minimize and ? to help', () => {
+  assert.equal(resolveShortcut({ key: 'm' }), 'toggleMinimize');
+  assert.equal(resolveShortcut({ key: '?', shiftKey: true }), 'toggleHelp');
+});
+
 test('ignores keys combined with Ctrl, Alt or Meta', () => {
   assert.equal(resolveShortcut({ key: 'j', ctrlKey: true }), null);
   assert.equal(resolveShortcut({ key: 'Tab', altKey: true }), null);
