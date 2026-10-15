@@ -24,7 +24,9 @@ function injectStyles() {
 }
 
 export class SentenceOverlay {
-  constructor() {
+  // onSelect(index) is called when the user clicks a sentence card.
+  constructor({ onSelect } = {}) {
+    this.onSelect = onSelect;
     this.sentences = [];
     this.activeIndex = -1;
     this.container = null;
@@ -47,6 +49,15 @@ export class SentenceOverlay {
     const list = createElement('div', 'pdfnav-list');
 
     container.id = 'pdf-sentence-overlay';
+
+    // One listener on the list handles clicks for every sentence card.
+    list.addEventListener('click', (event) => {
+      const card = event.target.closest('.pdfnav-sentence');
+      if (card && this.onSelect) {
+        this.onSelect(Number(card.dataset.index));
+      }
+    });
+
     header.append(title, counter, hint);
     container.append(header, list);
     document.body.appendChild(container);

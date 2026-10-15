@@ -75,6 +75,11 @@ export const OVERLAY_CSS = `
   background: var(--pdfnav-card);
   box-shadow: inset 0 0 0 1px var(--pdfnav-card-border);
   transition: background 120ms ease, box-shadow 120ms ease;
+  cursor: pointer;
+}
+
+#pdf-sentence-overlay .pdfnav-sentence:not(.is-active):hover {
+  box-shadow: inset 0 0 0 1px var(--pdfnav-accent);
 }
 
 #pdf-sentence-overlay .pdfnav-sentence.is-active {
