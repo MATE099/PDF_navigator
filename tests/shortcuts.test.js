@@ -52,6 +52,10 @@ test('maps M to minimize and ? to help', () => {
   assert.equal(resolveShortcut({ key: '?', shiftKey: true }), 'toggleHelp');
 });
 
+test('maps E to export bookmarks', () => {
+  assert.equal(resolveShortcut({ key: 'e' }), 'exportBookmarks');
+});
+
 test('ignores keys combined with Ctrl, Alt or Meta', () => {
   assert.equal(resolveShortcut({ key: 'j', ctrlKey: true }), null);
   assert.equal(resolveShortcut({ key: 'Tab', altKey: true }), null);

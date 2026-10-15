@@ -5,6 +5,7 @@ import { clampIndex, sanitizeBookmarks, toggleBookmark } from './modules/navigat
 import { getNextMatch } from './modules/search.js';
 import { copyText } from './modules/clipboard.js';
 import { isSpeechSupported, speak, stopSpeaking } from './modules/speech.js';
+import { buildBookmarksMarkdown, downloadTextFile, getExportFileName } from './modules/export.js';
 import {
   DEFAULT_SETTINGS,
   changeFontSize,
@@ -37,7 +38,8 @@ const actions = {
   toggleTheme: () => updateSettings(toggleTheme(settings)),
   toggleHelp: () => updateSettings({ ...settings, showHelp: !settings.showHelp }),
   toggleMinimize: () => updateSettings({ ...settings, minimized: !settings.minimized }),
-  movePanel: (position) => updateSettings({ ...settings, panelPosition: position })
+  movePanel: (position) => updateSettings({ ...settings, panelPosition: position }),
+  exportBookmarks: () => exportBookmarks()
 };
 
 const overlay = new SentenceOverlay({
@@ -242,6 +244,18 @@ async function copyCurrentSentence() {
 
   const copied = await copyText(sentence);
   overlay.showToast(copied ? 'Sentence copied' : 'Copy failed');
+}
+
+function exportBookmarks() {
+  if (!bookmarks.length) {
+    overlay.showToast('No bookmarks to export. Press B to add one.');
+    return;
+  }
+
+  const url = window.location.href;
+  const markdown = buildBookmarksMarkdown({ url, sentences, pages: sentencePages, bookmarks });
+  downloadTextFile(getExportFileName(url), markdown);
+  overlay.showToast(`Exported ${bookmarks.length} bookmark${bookmarks.length === 1 ? '' : 's'}`);
 }
 
 function jumpToBookmark(direction) {
