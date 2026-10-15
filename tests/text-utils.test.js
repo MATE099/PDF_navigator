@@ -39,6 +39,39 @@ test('respects paragraph breaks as stronger boundaries', () => {
   ]);
 });
 
+test('splits on question and exclamation marks', () => {
+  assert.deepEqual(splitIntoSentences('Is it done? Yes! Great.'), ['Is it done?', 'Yes!', 'Great.']);
+});
+
+test('keeps closing quotes and brackets with their sentence', () => {
+  assert.deepEqual(splitIntoSentences('He said "Hi." Then left.'), ['He said "Hi."', 'Then left.']);
+  assert.deepEqual(splitIntoSentences('Prices rose (see Table 2.) Then fell.'), [
+    'Prices rose (see Table 2.)',
+    'Then fell.'
+  ]);
+});
+
+test('does not split on academic abbreviations', () => {
+  assert.deepEqual(splitIntoSentences('Smith et al. found it. Others agreed.'), [
+    'Smith et al. found it.',
+    'Others agreed.'
+  ]);
+  assert.deepEqual(splitIntoSentences('See Fig. 3 for details. Next one.'), [
+    'See Fig. 3 for details.',
+    'Next one.'
+  ]);
+  assert.deepEqual(splitIntoSentences('Use tools, e.g. hammers. Then stop.'), [
+    'Use tools, e.g. hammers.',
+    'Then stop.'
+  ]);
+});
+
+test('returns an empty list for empty or blank input', () => {
+  assert.deepEqual(splitIntoSentences(''), []);
+  assert.deepEqual(splitIntoSentences('   \n\n  '), []);
+  assert.deepEqual(splitIntoSentences(null), []);
+});
+
 test('sanitizeSentence normalizes spacing around punctuation', () => {
   const input = '  Hello   ,  world !  ';
 
