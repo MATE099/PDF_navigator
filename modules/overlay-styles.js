@@ -56,6 +56,32 @@ export const OVERLAY_CSS = `
   color: var(--pdfnav-accent);
 }
 
+#pdf-sentence-overlay .pdfnav-counter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#pdf-sentence-overlay .pdfnav-goto {
+  width: 84px;
+  padding: 4px 8px;
+  border: 1px solid var(--pdfnav-card-border);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--pdfnav-text);
+  font: 12px/1.3 system-ui, sans-serif;
+}
+
+#pdf-sentence-overlay .pdfnav-goto:focus {
+  border-color: var(--pdfnav-accent);
+}
+
+#pdf-sentence-overlay .pdfnav-goto.is-invalid {
+  border-color: #f87171;
+}
+
 #pdf-sentence-overlay .pdfnav-hint {
   font: 12px/1.35 system-ui, sans-serif;
   color: var(--pdfnav-muted);

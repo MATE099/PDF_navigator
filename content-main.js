@@ -1,6 +1,7 @@
 import { splitIntoSentences, sanitizeSentence } from './modules/text-utils.js';
 import { SentenceOverlay } from './modules/sentence-overlay.js';
 import { isTypingTarget, resolveShortcut } from './modules/shortcuts.js';
+import { clampIndex } from './modules/navigation.js';
 
 const overlay = new SentenceOverlay({ onSelect: (index) => moveToSentence(index) });
 let sentences = [];
@@ -50,7 +51,8 @@ function setupKeyboardNavigation() {
     first: () => moveToSentence(0),
     last: () => moveToSentence(sentences.length - 1),
     close: () => clearPdfExperience(),
-    search: () => overlay.focusSearch()
+    search: () => overlay.focusSearch(),
+    goto: () => overlay.focusGoto()
   };
 
   document.addEventListener('keydown', (event) => {
@@ -75,15 +77,7 @@ function moveToSentence(nextIndex) {
     return;
   }
 
-  if (nextIndex < 0) {
-    nextIndex = 0;
-  }
-
-  if (nextIndex >= sentences.length) {
-    nextIndex = sentences.length - 1;
-  }
-
-  currentIndex = nextIndex;
+  currentIndex = clampIndex(nextIndex, sentences.length);
   overlay.setActiveIndex(currentIndex);
 }
 
