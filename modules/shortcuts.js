@@ -9,10 +9,13 @@ const SHORTCUTS = [
   { key: 'End', action: 'last' },
   { key: 'Escape', action: 'close' },
   { key: '/', action: 'search' },
-  { key: 'g', action: 'goto' }
+  { key: 'g', action: 'goto' },
+  { key: 'b', action: 'bookmark' },
+  { key: 'n', shift: false, action: 'nextBookmark' },
+  { key: 'n', shift: true, action: 'previousBookmark' }
 ];
 
-export const SHORTCUT_HINT = 'Tab / J: next · Shift+Tab / K: previous · Home / End · /: search · G: go to # · Esc: close';
+export const SHORTCUT_HINT = 'Tab/J next · Shift+Tab/K previous · Home/End · / search · G go to # · B bookmark · N/Shift+N bookmarks · Esc close';
 
 export function resolveShortcut(event) {
   if (!event || event.ctrlKey || event.metaKey || event.altKey) {
